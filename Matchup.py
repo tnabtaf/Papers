@@ -7,8 +7,7 @@ import csv
 import urllib.parse
 import yattag
 
-import Springer
-import Wiley                              # Wileay Online Library Saved Search Alerts
+import Papers
 import HistoryDB
 
 class Matchup(object):
@@ -50,61 +49,6 @@ class Matchup(object):
 
         
 
-def getDoiFromPaperList(paperList):
-    """
-    List is assumed to have been pre-verified to have consistent DOIs
-    """
-    for paper in paperList:
-        if paper.doi:
-            return(paper.doi)
-    return(None)
-
-def getDoiUrlFromPaperList(paperList):
-    """
-    List is assumed to have been pre-verified to have consistent DOIs
-    """
-    for paper in paperList:
-        if paper.doiUrl:
-            return(paper.doiUrl)
-    return(None)
-
-def getUrlFromPaperList(paperList):
-    """
-    Extract a URL from paper list.  Favor DOI URLs, and then fallback to others
-    if needed.
-    List is assumed to have been pre-verified to have consistent DOIs
-    """
-    doiUrl = getDoiUrlFromPaperList(paperList)
-    if not doiUrl:  
-        for paper in paperList:
-            if paper.url:
-                return(paper.url)
-
-    return(doiUrl)
-
-def getHopkinsUrlFromPaperList(paperList):
-    """
-    Extract a Hopkins specific URL from paper list.  
-    Not all sources have this.
-    """
-    hopkinsUrl = None
-    doiUrl = getDoiUrlFromPaperList(paperList)
-    if doiUrl:
-        urlParts = doiUrl.split("/")
-        hopkinsUrl = "/".join(urlParts[0:3]) + ".proxy1.library.jhu.edu/" + "/".join(urlParts[3:])
-    else:
-        for paper in paperList:
-            if paper.hopkinsUrl:
-                return(paper.hopkinsUrl)
-            elif Wiley.isWileyUrl(paper.url):
-                # Some wiley comes from other searches.
-                return(Wiley.createHopkinsUrl(paper.url))
-            elif Springer.isSpringerUrl(paper.url):
-                return(Springer.createHopkinsUrl(paper.url))
-            elif paper.url and not hopkinsUrl:
-                urlParts = paper.url.split("/")
-                hopkinsUrl = "/".join(urlParts[0:3]) + ".proxy1.library.jhu.edu/" + "/".join(urlParts[3:])
-    return(hopkinsUrl)
 
 def createReport(matchupsByLowTitle, sectionTitle):
     """
@@ -144,7 +88,7 @@ def createReport(matchupsByLowTitle, sectionTitle):
                         text("Paper @ CiteULike")
         else:
             with tag("ul"):
-                url = getUrlFromPaperList(matchup.papers)
+                url = Papers.getUrlFromPaperList(matchup.papers)
                 if url:
                     # Got a url, post it to CiteULike, and link to it.
                     with tag("li"):
@@ -155,7 +99,7 @@ def createReport(matchupsByLowTitle, sectionTitle):
                         with tag("a", href=url, target="paper"):
                             text("See paper")
 
-                hopkinsUrl = getHopkinsUrlFromPaperList(matchup.papers)
+                hopkinsUrl = Papers.getHopkinsUrlFromPaperList(matchup.papers)
                 if hopkinsUrl:
                     with tag("li"):
                         with tag("a", href=hopkinsUrl, target="paperhopkins"):
@@ -215,7 +159,7 @@ def reportPaper(matchup, history):
         if history:
             historyEntry = history.getByTitleLower(matchup.lowerTitle)
             if not historyEntry:
-                historyEntry = history.getByDoi(getDoiFromPaperList(matchup.papers))
+                historyEntry = history.getByDoi(matchup.getDoiFromPapers())
             if historyEntry:
                 leader = "Newish [" + historyEntry[HistoryDB.COMMENTS] + "] "
         leader += " (#" + str(reportPaper.newCounter) + "):" 
@@ -259,7 +203,7 @@ def reportPaper(matchup, history):
                         text("Paper @ CiteULike")
         else:
             with tag("ul"):
-                url = getUrlFromPaperList(matchup.papers)
+                url = Papers.getUrlFromPaperList(matchup.papers)
                 if url:
                     # Got a url, post it to CiteULike, and link to it.
                     with tag("li"):
@@ -270,7 +214,7 @@ def reportPaper(matchup, history):
                         with tag("a", href=url, target="paper"):
                             text("See paper")
 
-                hopkinsUrl = getHopkinsUrlFromPaperList(matchup.papers)
+                hopkinsUrl = Papers.getHopkinsUrlFromPaperList(matchup.papers)
                 if hopkinsUrl:
                     with tag("li"):
                         with tag("a", href=hopkinsUrl, target="paperhopkins"):

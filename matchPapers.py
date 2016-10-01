@@ -159,7 +159,7 @@ byLowerTitle = {}
 for lowerTitle, papersWithTitle in papers.getAllMatchupsGroupedByTitle().items():
     
     # Match by DOI first, if possible.
-    doi = Matchup.getDoiFromPaperList(papersWithTitle)
+    doi = Papers.getDoiFromPaperList(papersWithTitle)
 
     culPaper = culLib.getByDoi(doi)
     if culPaper:                # Can Match by DOI; already have paper

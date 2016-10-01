@@ -3,6 +3,9 @@
 #
 # Information about papers 
 
+import Wiley
+import Springer
+
 class PaperLibrary(object):
     """
     Keeps track of all the new papers/reference, and their match in CUL entries, if any.
@@ -106,3 +109,58 @@ class PaperLibrary(object):
 
         
         
+def getDoiFromPaperList(paperList):
+    """
+    List is assumed to have been pre-verified to have consistent DOIs
+    """
+    for paper in paperList:
+        if paper.doi:
+            return(paper.doi)
+    return(None)
+
+def getDoiUrlFromPaperList(paperList):
+    """
+    List is assumed to have been pre-verified to have consistent DOIs
+    """
+    for paper in paperList:
+        if paper.doiUrl:
+            return(paper.doiUrl)
+    return(None)
+
+def getUrlFromPaperList(paperList):
+    """
+    Extract a URL from paper list.  Favor DOI URLs, and then fallback to others
+    if needed.
+    List is assumed to have been pre-verified to have consistent DOIs
+    """
+    doiUrl = getDoiUrlFromPaperList(paperList)
+    if not doiUrl:  
+        for paper in paperList:
+            if paper.url:
+                return(paper.url)
+
+    return(doiUrl)
+
+def getHopkinsUrlFromPaperList(paperList):
+    """
+    Extract a Hopkins specific URL from paper list.  
+    Not all sources have this.
+    """
+    hopkinsUrl = None
+    doiUrl = getDoiUrlFromPaperList(paperList)
+    if doiUrl:
+        urlParts = doiUrl.split("/")
+        hopkinsUrl = "/".join(urlParts[0:3]) + ".proxy1.library.jhu.edu/" + "/".join(urlParts[3:])
+    else:
+        for paper in paperList:
+            if paper.hopkinsUrl:
+                return(paper.hopkinsUrl)
+            elif Wiley.isWileyUrl(paper.url):
+                # Some wiley comes from other searches.
+                return(Wiley.createHopkinsUrl(paper.url))
+            elif Springer.isSpringerUrl(paper.url):
+                return(Springer.createHopkinsUrl(paper.url))
+            elif paper.url and not hopkinsUrl:
+                urlParts = paper.url.split("/")
+                hopkinsUrl = "/".join(urlParts[0:3]) + ".proxy1.library.jhu.edu/" + "/".join(urlParts[3:])
+    return(hopkinsUrl)

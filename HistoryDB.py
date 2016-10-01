@@ -5,6 +5,7 @@
 
 import csv
 
+import Papers
 import Matchup
 
 NEW      = "new"
@@ -76,7 +77,7 @@ def writeHistory(matchups, sortedTitles, csvOutFileName, priorHistoryDb):
 
         row[TITLE]   = matchup.papers[0].title
         row[AUTHORS] = matchup.papers[0].authors
-        row[DOI]     = Matchup.getDoiFromPaperList(matchup.papers)
+        row[DOI]     = Papers.getDoiFromPaperList(matchup.papers)
         priorHistoryEntry = priorHistoryDb.getEntryGivenMatchup(matchup)
         if priorHistoryEntry:
             row[COMMENTS] = priorHistoryEntry[COMMENTS]
