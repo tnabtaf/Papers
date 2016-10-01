@@ -15,12 +15,12 @@ import argparse
 import getpass
 
 import CiteULike                          # CiteULike Handling
-import Matchup                            # Matchup between newly reported papers and what's in CUL
+import Matchup                            # Matchup newly reported papers & what's in CUL
 import HistoryDB                          # record what was found in this run
 import IMAP                               # Nasty Email handling.
 import WOS                                # web of science
 import ScienceDirect                      # Science Direct reports
-import Springer
+import Springer                           # Used to link to Springer papers
 import GoogleScholar
 import MyNCBI
 import Wiley                              # Wileay Online Library Saved Search Alerts
@@ -224,7 +224,7 @@ papers = PaperLibrary()
 # connect to email source
 gmail = IMAP.GMailSource(args.args.email, getpass.getpass())
 
-# go through each source
+# go through each source and match with CUL library.
 
 sources = args.getSources()
 if sources[0] == 'all':
@@ -236,12 +236,24 @@ for source in sources:
     sourceSearch = IMAP.buildSearchString(sender = sourceClass.SENDER,
                                       sentSince = args.getSentSince(),
                                       sentBefore = args.getSentBefore())
+    emailsFromSource = 0
     for email in gmail.getEmails(PAPERS_MAILBOX, sourceSearch):
         sourceEmail = sourceClass.Email(email)
+        papersFromEmail = 0
         for paper in sourceEmail.getPapers():
             paper.search = sourceEmail.getSearch()
             papers.addPaper(paper)
+            papersFromEmail += 1
 
+        if papersFromEmail == 0:
+            print("<br />Warning: Email from source " + source +
+                  " does not contain any papers.")
+            
+        emailsFromSource += 1
+
+    if emailsFromSource == 0:
+        print("<br />Warning: No emails were found from " + source + ".<br />")
+        
         
 # All papers from all emails read
 papers.verifyConsistentDois()      # all papers with same title, have the same (or no) DOI
