@@ -2,18 +2,20 @@
 # -*- coding: utf-8 -*-
 #
 # Generate reports about the Galaxy CiteULike library.
-# Reports are generated in both TSV and MoinMoin markup.
+# Reports are generated in both TSV and Markdown.
 #
 
 
 import argparse
 import titlecase
+import urllib.parse
 import CiteULike                          # CiteULike Handling
 
 CUL_GROUP_ID = "16008"
 CUL_GROUP_SEARCH = "http://www.citeulike.org/search/group?search=Search+library&group_id=" + CUL_GROUP_ID + "&q="
 
 CUL_GROUP_TAG_BASE_URL = "http://www.citeulike.org/group/" + CUL_GROUP_ID + "/tag/"
+
 
 class FastCulLib(object):
     """
@@ -31,7 +33,10 @@ class FastCulLib(object):
         byYear = {}          # unordered array of papers from that year
         byTag = {}           # value is unordered array of papers w/ tag
         byJournal= {}        # unordered list of papers in each journal
-    
+
+        sortedByJournal = [] # sorted by lower case journal name
+        self.journalAlphaRank = {} # key is lower case Journal Name; value is alphabetized rank.
+        
         for paper in culLib.allPapers():
 
             # Process Year
@@ -57,7 +62,8 @@ class FastCulLib(object):
             if jrnl:
                 if jrnl not in byJournal:
                     byJournal[jrnl] = []
-                byJournal[jrnl].append(paper) 
+                    sortedByJournal.append(jrnl)
+                byJournal[jrnl].append(paper)
 
         # create set versions
         self.byYear = {}
@@ -69,6 +75,11 @@ class FastCulLib(object):
         self.byJournal = {}
         for journal in byJournal:
             self.byJournal[journal] = frozenset(byJournal[journal])
+
+        # create sorted list of Journal names
+        sortedByJournal.sort()
+        for idx in range(len(sortedByJournal)):
+            self.journalAlphaRank[sortedByJournal[idx]] = idx
         
         return(None)
 
@@ -98,13 +109,21 @@ class FastCulLib(object):
         """
         return(len(self.getPapers(journal = journalName.lower())))
 
+
+    def keySortTotalName(self, journalName):
+        """
+        Somehow make the Python 3 sort work.
+
+        Try returning a floating point number with count
+        """        
+        return(self.getJournalTotalCount(journalName) - (self.journalAlphaRank[journalName] * 0.000001))
         
     def getJournalsByTotal(self):
         """
         Return a list of Journal names in descending order, sorted by total
         number of papers in each journal 
         """
-        return(sorted (self.byJournal.keys(), key=lambda jrnlName: -self.getJournalTotalCount(jrnlName)))
+        return(sorted (self.byJournal.keys(), key=self.keySortTotalName, reverse=True))
 
         
     def getPapers(self,
@@ -137,9 +156,50 @@ class FastCulLib(object):
         return(self.culLib.getPaperCount())
 
 
-def genMoinTagYearReport(fastCulLib):
+
+def genMarkdownCountStyle(numPapers):
     """
-    Generate a papers by tag and year report in MoinMoin markup.
+    Bigger counts get more emphasis.
+    """
+    style = ' style="text-align: right; '
+
+    if numPapers == 0:
+        style += 'color: #AAAAAA;'
+    elif numPapers == 1:
+        style += 'background-color: #f0f8ff;'
+    elif numPapers == 2:
+        style += 'background-color: #dcecf8;'
+    elif numPapers <= 5:
+        style += 'background-color: #c8d0f0;'
+    elif numPapers <= 10:
+        style += 'background-color: #b4c4e8;'
+    elif numPapers <= 20:
+        style += 'background-color: #a0b8e0;'
+    elif numPapers <= 50:
+        style += 'background-color: #8cacd8;'
+    elif numPapers <= 100:
+        style += 'background-color: #78a0d0; color: #ffffff'
+    elif numPapers <= 200:
+        style += 'background-color: #6494c8; color: #ffffff'
+    elif numPapers <= 500:
+        style += 'background-color: #5088c0; color: #ffffff'
+    elif numPapers <= 1000:
+        style += 'background-color: #3c7cb8; color: #ffffff'
+    elif numPapers <= 2000:
+        style += 'background-color: #2870b0; color: #ffffff'
+    elif numPapers <= 5000:
+        style += 'background-color: #1464a8; color: #ffffff'
+    elif numPapers <= 10000:
+        style += 'background-color: #0058a0; color: #ffffff'
+    style += '" '
+
+    return style
+
+
+
+def genMarkdownTagYearReport(fastCulLib):
+    """
+    Generate a papers by tag and year report in Markdown markup.
     Report is returned as a multi-line string.
     """
     # Preprocess. Need to know order of tags and years.
@@ -157,42 +217,55 @@ def genMoinTagYearReport(fastCulLib):
     report = []                # now have everything we need; generate report
     
     # generate header
-    report.append('||<|2 class="th"> Year ' +
-                  '||<-' + str(len(tags)) + ' class="th"> Tags ||' +
-                  '||<|2 class="th"> # ||\n')
-
+    report.append('<table>\n')
+    report.append('  <tr>\n')
+    report.append('    <th rowspan="2"> Year </th>\n')
+    report.append('    <th colspan="' + str(len(tags)) + '"> Tags </th>\n')
+    report.append('    <th rowspan="2"> # </th>\n')
+    report.append('  </tr>\n')
+    
+    report.append('  <tr>\n')
     for tag in tagsInCountOrder:
-        report.append('||<class="th"> ' + tag + ' ')
-    report.append('||\n')
+        report.append('    <th> ' + tag + ' </th>\n')
+    report.append('  </tr>\n')
 
     # generate numbers per year
     for year in fastCulLib.getYears():  # years are listed chronologically
+        report.append('  <tr>\n')
         nPapersThisYear = len(fastCulLib.getPapers(year=year))
-        report.append('||<class="th"> ' + year + ' ')
+        report.append('    <th> ' + year + ' </th>\n')
         for tag in tagsInCountOrder:
             papersForTagYear = fastCulLib.getPapers(tag=tag, year=year)
             if papersForTagYear:
-                style = genMoinCountStyle(len(papersForTagYear))
+                style = genMarkdownCountStyle(len(papersForTagYear))
                 count = str(len(papersForTagYear))
             else:
                 style = ""
                 count = ""
-            report.append('||' + style + count + ' ')
-        report.append('||<)> ' + str(nPapersThisYear) + ' ||\n')
+            report.append('    <td ' + style + '> ' +  count + ' </td>\n')
+        yearCountStyle = genMarkdownCountStyle(nPapersThisYear)
+        report.append('    <td ' + yearCountStyle + '> ' + str(nPapersThisYear) + ' </td>\n')
+        report.append('  </tr>\n')
 
     # generate total line at bottom
-    report.append('||<class="th"> Total ')
+    report.append('  <tr>\n')
+    report.append('    <th> Total </th>\n')
     for tag in tagsInCountOrder:
-        report.append('||<) class="th"> ' + str(nPapersWTag[tag]) + ' ')
-    report.append(' ||<) class="th"> ' +
-                  str(len(fastCulLib.getPapers())) + ' ||\n')
+        tagCountStyle =  genMarkdownCountStyle(nPapersWTag[tag])
+        report.append('    <th ' + tagCountStyle + '> ' + str(nPapersWTag[tag]) + ' </th>\n')
 
+    allPapersCount = len(fastCulLib.getPapers())
+    allPapersStyle = genMarkdownCountStyle(allPapersCount)
+    report.append('    <th ' + allPapersStyle + '> ' + str(allPapersCount) + ' </th>\n')
+    report.append('  </tr>\n')
+    report.append('</table>\n')
+    
     return(u"".join(report))
 
 
-def genMoinYearTagReport(fastCulLib):
+def genMarkdownYearTagReport(fastCulLib):
     """
-    Generate a papers by year and tag report in MoinMoin markup.
+    Generate a papers by year and tag report in Markdown markup.
     Report is returned as a multi-line string.
     """
     # Preprocess. Need to know order of tags and years.
@@ -210,34 +283,48 @@ def genMoinYearTagReport(fastCulLib):
     report = []                # now have everything we need; generate report
     
     # generate header
-    report.append('||<class="th"> Tag ')
+    report.append('<table>\n')
+    report.append('  <tr>\n')
+    report.append('    <th> Tag </th>\n')
 
     for year in fastCulLib.getYears(): # years are listed chronologically
-        report.append('||<class="th"> ' + year + ' ')
-    report.append('||<class="th"> # ||\n')
+        report.append('    <th> ' + year + ' </th>\n')
+    report.append('    <th> # </th>\n')
+    report.append('  </tr>\n')
 
     # generate numbers per tag/year
-    for tag in tagsInCountOrder:  
-        report.append('||<class="th"> [[' + CUL_GROUP_TAG_BASE_URL + tag + "|"
-                      + tag + ']] ')
+    for tag in tagsInCountOrder:
+        report.append('  <tr>\n')
+        report.append('    <th> <a href="' + CUL_GROUP_TAG_BASE_URL + tag + '"> '
+                      + tag + '</a></th>\n')
         for year in fastCulLib.getYears():
             papersForTagYear = fastCulLib.getPapers(tag=tag, year=year)
             if papersForTagYear:
-                style = genMoinCountStyle(len(papersForTagYear))
+                style = genMarkdownCountStyle(len(papersForTagYear))
                 count = str(len(papersForTagYear))
             else:
                 style = ""
                 count = ""
-            report.append('||' + style + count + ' ')
-        report.append("||<)> '''" + str(nPapersWTag[tag]) + "''' ||\n")
+            report.append('    <td ' + style + '> ' + count + ' </td>\n')
+
+        tagCountStyle = genMarkdownCountStyle(nPapersWTag[tag])
+        report.append('    <th ' + tagCountStyle + '> ' + str(nPapersWTag[tag]) + " </th>\n")
+        report.append('  </tr>\n')
  
     # generate total line at bottom
-    report.append('||<class="th"> Total ')
+    report.append('  <tr>\n')
+    report.append('    <th> Total </th>\n')
     for year in fastCulLib.getYears():
         nPapersThisYear = len(fastCulLib.getPapers(year=year))
-        report.append('||<) class="th"> ' + str(nPapersThisYear) + ' ')
-    report.append(' ||<) class="th"> ' +
-                  str(len(fastCulLib.getPapers())) + ' ||\n')
+        papersThisYearStyle = genMarkdownCountStyle(nPapersThisYear)
+        report.append('    <th ' + papersThisYearStyle + '>' + str(nPapersThisYear) + ' </th>\n')
+
+    totalPapers = len(fastCulLib.getPapers())
+    totalPapersStyle = genMarkdownCountStyle(totalPapers)
+    report.append('    <th ' + totalPapersStyle + '> ' +
+                  str(totalPapers) + ' </th>\n')
+    report.append('  </tr>\n')
+    report.append('</table>\n')
 
     return(u"".join(report))
 
@@ -277,38 +364,10 @@ def genTsvJournalReport(fastCulLib):
 
     return(u"".join(report).encode('utf-8'))
 
-
-def genMoinCountStyle(numPapers):
-    """
-    Bigger counts get more emphasis.
-    """
-    style = '<) '
-
-    if numPapers == 0:
-        style += 'style="color: #AAAAAA;"> '
-    elif numPapers == 1:
-        style += 'style="background-color: #dddddd;"> '
-    elif numPapers <= 5:
-        style += 'style="background-color: #cfe2f3;"> '
-    elif numPapers <= 10:
-        style += 'style="background-color: #9fc5e8;"> '
-    elif numPapers <= 20:
-        style += 'style="background-color: #6fa8dc;"> '
-    elif numPapers <= 50:
-        style += 'style="background-color: #3d85c6; color: #ffffff"> '
-    elif numPapers <= 100:
-        style += 'style="background-color: #2d65b6; color: #ffffff"> '
-    elif numPapers <= 500:
-        style += 'style="background-color: #1d45a6; color: #ffffff"> '
-    else:
-        style += '> '
-
-    return style
-
         
-def genMoinJournalReport(fastCulLib):
+def genMarkdownJournalReport(fastCulLib):
     """
-    Generate a papers by by Journal and Year report in MoinMoin markup.
+    Generate a papers by by Journal and Year report in Markdown markup.
     Report is returned as a multi-line string.
     """
 
@@ -316,34 +375,65 @@ def genMoinJournalReport(fastCulLib):
     years = fastCulLib.getYears()
     
     # generate header
-    report.append('||<rowclass="th"> Journal || ')
+    report.append('<table>\n')
+    report.append('  <tr>\n')
+    report.append('    <th> </th>\n')
+    report.append('    <th> Journal </th>\n')
     for year in years:  # years are listed chronologically
-        report.append(year + ' || ')
-    report.append(' Total ||\n')
+        report.append("    <th> " + year + ' </th>\n')
+    report.append("    <th> Total </th>\n")
+    report.append("    <th> Rank </th>\n")
+    report.append("  </tr>\n")
 
     # spew numbers for each journal
+    journalNum = 1
+    journalRank = 0
+    previousScore = 0
+    
     for journalName in fastCulLib.getJournalsByTotal():
         # Generate link to journal in CUL.
-        culGroupSearch = CUL_GROUP_SEARCH + 'journal:"' + journalName + '"'
-        report.append("|| ''[[" + culGroupSearch + "|"
-                      + titlecase.titlecase(journalName) +
-                      "]]'' ||")
+        culGroupSearch = CUL_GROUP_SEARCH + 'journal:' + urllib.parse.quote(journalName)
+        report.append('  <tr>\n')
+        report.append('    <td style="text-align: right;"> ' + str(journalNum) + ' </td>') 
+        report.append('    <td> <strong> <a href="' + culGroupSearch + '">'
+            + titlecase.titlecase(journalName) + "</a></strong> </td>\n")
+            
         for year in years:
             numPapers = len(fastCulLib.getPapers(journal=journalName, year=year))
-            style = genMoinCountStyle(numPapers)
-            report.append(style +
-                          str(len(fastCulLib.getPapers(journal=journalName,
-                                                       year=year))) + ' ||')
-        report.append("<)> '''" +
-                      str(fastCulLib.getJournalTotalCount(journalName)) + "''' ||\n'")
+            style = genMarkdownCountStyle(numPapers)
+            report.append('    <td ' + style + "> " + str(numPapers) + ' </td>\n')
+
+        # Add total for journal across all years.
+        journalTotalPapers = fastCulLib.getJournalTotalCount(journalName)
+        journalTotalStyle = genMarkdownCountStyle(journalTotalPapers)
+        report.append("    <th " + journalTotalStyle + "> " +
+                      str(journalTotalPapers) + " </th>\n")
+
+        # figure out rank
+        if previousScore != journalTotalPapers:
+            journalRank = journalNum
+            previousScore = journalTotalPapers
+        report.append('    <td style="text-align: right;"> ' + str(journalRank) + ' </td>')
+        report.append('  </tr>\n')
+        journalNum += 1
 
     # gernate footer
-    report.append('||>class="th"> TOTALS ||<)> ')
+    report.append('  <tr>\n')
+    report.append('    <th> </th>\n')
+    report.append('    <th> TOTALS </th>\n')
     for year in years:  # years are listed chronologically
-        report.append(str(len(fastCulLib.getPapers(year=year))) + ' ||<)> ')
-    report.append(" ||<)> '''" + str(fastCulLib.getPaperCount()) + "''' ||\n")
+        yearTotal = len(fastCulLib.getPapers(year=year))
+        yearStyle = genMarkdownCountStyle(yearTotal)
+        report.append('    <th ' + yearStyle + "> " + str(yearTotal) + ' </th>\n')
 
-    return(u"".join(report).encode('utf-8'))
+    totalPapers = fastCulLib.getPaperCount()
+    totalStyle = genMarkdownCountStyle(totalPapers)
+    report.append("    <th " + totalStyle + "> " + str(totalPapers) + "</th>\n")
+    report.append('    <th> </th>\n')
+    report.append("  </tr>\n")
+    report.append("</table>\n")
+    
+    return(u"".join(report))
 
 
 
@@ -367,8 +457,8 @@ def argghhs():
         "--journalyear", required=False, action="store_true",
         help="Produce table showing number of papers in different journals, each year.")
     argParser.add_argument(
-        "--moin", required=False, action="store_true",
-        help="Produce report(s) using MoinMoin markup")
+        "--markdown", required=False, action="store_true",
+        help="Produce report(s) using Markdown")
     argParser.add_argument(
         "--tsv", required=False, action="store_true", 
         help=("Produce report(s) in TSV format"))
@@ -392,15 +482,15 @@ if args.tagyear:
 
     # Generate them reports
 
-    # options are to have one routine per report/format combo, or create a Moin
+    # options are to have one routine per report/format combo, or create a Markdown
     # report, or a tsv report and then have their separate methods do the dirty
     # work. Try that.
 
     # report showing papers by tag by year requested.
-    if args.moin:
-        # generate a tag year report in MoinMoin format.
-        moinReport = genMoinTagYearReport(fastCulLib)
-        print(moinReport)
+    if args.markdown:
+        # generate a tag year report in Markdown format.
+        markdownReport = genMarkdownTagYearReport(fastCulLib)
+        print(markdownReport)
     if args.tsv:
         # generate tag year data in a tab delimited file
         tsvReport = genTsvTagYearReport(fastCulLib)
@@ -410,15 +500,15 @@ if args.yeartag:
 
     # Generate them reports
 
-    # options are to have one routine per report/format combo, or create a Moin
+    # options are to have one routine per report/format combo, or create a Markdown
     # report, or a tsv report and then have their separate methods do the dirty
     # work. Try that.
 
     # report showing papers by tag by year requested.
-    if args.moin:
-        # generate a tag year report in MoinMoin format.
-        moinReport = genMoinYearTagReport(fastCulLib)
-        print(moinReport)
+    if args.markdown:
+        # generate a tag year report in Markdown format.
+        markdownReport = genMarkdownYearTagReport(fastCulLib)
+        print(markdownReport)
 
 
 if args.journalyear:
@@ -431,7 +521,7 @@ if args.journalyear:
         journalReport = genTsvJournalReport(fastCulLib)
         print(journalReport)
     
-    if args.moin:
-        journalReport = genMoinJournalReport(fastCulLib)
+    if args.markdown:
+        journalReport = genMarkdownJournalReport(fastCulLib)
         print(journalReport)
     
