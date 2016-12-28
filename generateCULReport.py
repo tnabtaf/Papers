@@ -392,7 +392,7 @@ def genMarkdownJournalReport(fastCulLib):
     
     for journalName in fastCulLib.getJournalsByTotal():
         # Generate link to journal in CUL.
-        culGroupSearch = CUL_GROUP_SEARCH + 'journal:' + urllib.parse.quote(journalName)
+        culGroupSearch = CUL_GROUP_SEARCH + urllib.parse.quote('journal:"' +journalName + '"')
         report.append('  <tr>\n')
         report.append('    <td style="text-align: right;"> ' + str(journalNum) + ' </td>') 
         report.append('    <td> <strong> <a href="' + culGroupSearch + '">'
