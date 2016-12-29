@@ -81,6 +81,19 @@ class CiteULikeEntry(object):
             tags = []
         return tags
 
+
+    def getEntryDate(self):
+        """
+        Return the date the CiteULike Entry was created.
+
+        This looks like 
+          "date": "2016-12-22 00:18:58",
+        
+        in the JSON.  Return just the "YYYY-MM-DD"
+        """
+        return(self.culJson.get("date")[0:10])
+
+
         
     def debugPrint(self, descr="", indent=""):
         print(indent + "DEBUG: CiteULikeEntry: " + descr)

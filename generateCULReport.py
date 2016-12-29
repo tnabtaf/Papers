@@ -129,10 +129,12 @@ class FastCulLib(object):
     def getPapers(self,
                   tag = None,
                   year = None,
-                  journal = None):
+                  journal = None,
+                  startDate = None,
+                  endDate = None):
         """
-        Given any combination of tag, year and.or journal, return the only the
-        set of papers that have the sepcified combination of values.
+        Given any combination of tag, year, journal and/or startDate and endDate, 
+        return the only the set of papers that have the sepcified combination of values.
         """
         sets = []
         if tag:
@@ -142,16 +144,33 @@ class FastCulLib(object):
         if journal:
             sets.append(self.byJournal[journal])
 
-        if len(sets) == 0:
-            return(frozenset(self.culLib.allPapers()))
-        elif len(sets) == 1:
-            return(sets[0])
-        else:
-            narrowed = sets[0]
+        if len(sets) > 1:
+            selected = sets[0]
             for restriction in sets[1:]:
-                narrowed = narrowed.intersection(restriction)
-            return(narrowed)
+                selected = selected.intersection(restriction)
+        elif len(sets) == 1:
+            selected = sets[0]
+        else: # sets is empty 
+            selected = frozenset(self.culLib.allPapers())
 
+        # apply date selections if present
+        if startDate or endDate:
+            matchDates = []
+            for paper in selected:
+                inSoFar = True
+                if startDate and paper.getEntryDate() < startDate:
+                    inSoFar = False
+                elif endDate and paper.getEntryDate() > endDate:
+                    inSoFar = False
+                if inSoFar:
+                    matchDates.append(paper)
+
+            selected = matchDates
+
+        return(selected)
+
+
+    
     def getPaperCount(self):
         return(self.culLib.getPaperCount())
 
@@ -436,6 +455,65 @@ def genMarkdownJournalReport(fastCulLib):
     return(u"".join(report))
 
 
+def genMarkdownTagsDateRangeReport(fastCulLib, startDate, endDate):
+    """
+    report how many papers have each tag that were enterred into CUL during
+    a given date range.
+
+    Report is returned as a multi-line string.
+
+    Can see a couple of ways to do this:
+    1. Only report tags that have papers
+    2. Report all tags, even the ones with no papers.
+    3. Order tags from most to least papers
+    4. Order tags alphabetically
+    5. Present tags in a multi-column table
+    6. Present tabs in 2 column table: count, and tag.
+
+    Went with #1, #3, and #6.  This means this could be done with Markdown.
+    Leaving it as HTML for now, in case I embrace #6.
+    """
+
+    # get total # of papers during time range
+    nTotalPapers = len(fastCulLib.getPapers(startDate=startDate, endDate=endDate))
+    
+    # Preprocess. Need to know order of tags and years.
+    tags = fastCulLib.getTags()
+    # Count number of papers with each tag
+    nPapersWTag = {}
+    for tag in tags:
+        nPapersWTag[tag] = len(fastCulLib.getPapers(tag=tag, startDate=startDate, endDate=endDate))
+
+    # sort tags by paper count, max first
+    tagsInCountOrder = [tag for tag in
+                        sorted(nPapersWTag.keys(),
+                               key=lambda keyValue: - nPapersWTag[keyValue])]
+
+    report = []                # now have everything we need; generate report
+    
+    # generate header
+    report.append('\n' + str(nTotalPapers) + ' papers added between ' +
+                  startDate + ' and ' + endDate +'.\n\n') # markdown! 
+    report.append('<table>\n')
+    report.append('  <tr>\n')
+    report.append('    <th> # </th>\n')
+    report.append('    <th> Tag </th>\n')
+    report.append('  </tr>\n')
+
+    # generate numbers per tag
+    for tag in tagsInCountOrder:
+        if nPapersWTag[tag] > 0:
+            report.append('  <tr>\n')
+            report.append('    <td style="text-align: right"> ' + str(nPapersWTag[tag]) + ' </td>\n')
+            report.append('    <td> <a href="' + CUL_GROUP_TAG_BASE_URL + tag + '">' + tag + '</a></td>\n')
+            report.append('  </tr>\n')
+ 
+    report.append('</table>\n')
+
+    return(u"".join(report))
+
+
+
 
 def argghhs():
     """
@@ -456,6 +534,18 @@ def argghhs():
     argParser.add_argument(
         "--journalyear", required=False, action="store_true",
         help="Produce table showing number of papers in different journals, each year.")
+    argParser.add_argument(
+        "--tagcountdaterange", required=False, action="store_true",
+        help="Produce table showing number of papers that were tagged with each tag during a given time perioud. " +
+             "--startdate and --enddate parameters are required if tagcountdaterange is specified.")
+    argParser.add_argument(
+        "--startdate", required=False,
+        help="tagcountdaterange will report on papers with entry dates greater than or equal to this date.  " +
+             "Example: 2016-12-29")
+    argParser.add_argument(
+        "--enddate", required=False,
+        help="tagcountdaterange will report on papers with entry dates less than or equal to this date.  " +
+             "Example: 2017-01-29")
     argParser.add_argument(
         "--markdown", required=False, action="store_true",
         help="Produce report(s) using Markdown")
@@ -525,3 +615,14 @@ if args.journalyear:
         journalReport = genMarkdownJournalReport(fastCulLib)
         print(journalReport)
     
+if args.tagcountdaterange:
+    # Generate a table of tags showing how many papers were tagged with each
+    # during a given date range.
+
+    # This report is used in the monthly newsletters
+
+    if args.markdown:
+        tagsDateRangeReport = genMarkdownTagsDateRangeReport(fastCulLib, args.startdate, args.enddate)
+        print(tagsDateRangeReport)
+    
+        
