@@ -7,6 +7,7 @@
 
 
 import argparse
+import math
 import titlecase
 import urllib.parse
 import CiteULike                          # CiteULike Handling
@@ -470,9 +471,10 @@ def genMarkdownTagsDateRangeReport(fastCulLib, startDate, endDate):
     5. Present tags in a multi-column table
     6. Present tabs in 2 column table: count, and tag.
 
-    Went with #1, #3, and #6.  This means this could be done with Markdown.
-    Leaving it as HTML for now, in case I embrace #6.
+    Went with #1, #3, and #5.  An earlier version went with #1, #3, and #6.
     """
+
+    N_TAG_COLUMN_GROUPS = 4         # create report with n tags and n counts across
 
     # get total # of papers during time range
     nTotalPapers = len(fastCulLib.getPapers(startDate=startDate, endDate=endDate))
@@ -489,29 +491,50 @@ def genMarkdownTagsDateRangeReport(fastCulLib, startDate, endDate):
                         sorted(nPapersWTag.keys(),
                                key=lambda keyValue: - nPapersWTag[keyValue])]
 
-    report = []                # now have everything we need; generate report
-    
+    # generate numbers per tag
+    tagMarkup = []
+    for tag in tagsInCountOrder:
+        if nPapersWTag[tag] > 0:
+            tagMarkup.append(
+                '    <td style="text-align: right"> ' + str(nPapersWTag[tag]) + ' </td>\n' +
+                '    <td> <a href="' + CUL_GROUP_TAG_BASE_URL + tag + '">' + tag + '</a></td>\n')
+
+    # Have markup for individual tags; now decide how many go in each column
+    nTagsToReport = len(tagMarkup)
+    nTagsPerCol = int(math.ceil(nTagsToReport / N_TAG_COLUMN_GROUPS))
+
+    report = []              # now have everything we need; generate report
+
     # generate header
     report.append('\n' + str(nTotalPapers) + ' papers added between ' +
                   startDate + ' and ' + endDate +'.\n\n') # markdown! 
-    report.append('<table>\n')
-    report.append('  <tr>\n')
-    report.append('    <th> # </th>\n')
-    report.append('    <th> Tag </th>\n')
+    report.append(
+        '<table>\n' +
+        '  <tr>\n')
+    for colGroup in range(N_TAG_COLUMN_GROUPS):
+        report.append(
+            '    <th> # </th>\n' +
+            '    <th> Tag </th>\n')
+        if colGroup < N_TAG_COLUMN_GROUPS - 1:
+            report.append('    <td rowspan="' + str(nTagsPerCol + 1) + '"> </td>')
     report.append('  </tr>\n')
 
-    # generate numbers per tag
-    for tag in tagsInCountOrder:
-        if nPapersWTag[tag] > 0:
-            report.append('  <tr>\n')
-            report.append('    <td style="text-align: right"> ' + str(nPapersWTag[tag]) + ' </td>\n')
-            report.append('    <td> <a href="' + CUL_GROUP_TAG_BASE_URL + tag + '">' + tag + '</a></td>\n')
-            report.append('  </tr>\n')
+    # add tags & counts
+    for rowIdx in range(nTagsPerCol):
+        report.append('  <tr>\n')
+        for colGroup in range(N_TAG_COLUMN_GROUPS):
+            tagIdx = (rowIdx * N_TAG_COLUMN_GROUPS) + colGroup
+            if tagIdx < nTagsToReport:
+                report.append(tagMarkup[tagIdx])
+            else:
+                report.append(
+                    '    <td> </td>\n' +
+                    '    <td> </td>\n')
+        report.append('  </tr>\n')
  
     report.append('</table>\n')
 
     return(u"".join(report))
-
 
 
 
