@@ -161,6 +161,7 @@ def reportPaper(matchup, history):
             if not historyEntry:
                 historyEntry = history.getByDoi(matchup.getDoiFromPapers())
             if historyEntry:
+                bgColor = "#ee8"
                 leader = "Newish [" + historyEntry[HistoryDB.COMMENTS] + "] "
         leader += " (#" + str(reportPaper.newCounter) + "):" 
         hLevel = "h2"

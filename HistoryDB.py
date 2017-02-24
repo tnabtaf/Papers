@@ -5,6 +5,7 @@
 
 import csv
 
+import Title
 import Papers
 import Matchup
 
@@ -26,7 +27,7 @@ class HistoryDB(object):
         csvReader = csv.DictReader(csvIn, fieldnames=COLUMNS, dialect="excel-tab")
         for row in csvReader:
             
-            self.byTitleLower[row[TITLE].lower()] = row
+            self.byTitleLower[Title.strip(row[TITLE])] = row
             self.byDoi[row[DOI]] = row
 
         csvIn.close()
