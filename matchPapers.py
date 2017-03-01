@@ -69,6 +69,11 @@ class Argghhs(object):
         argParser.add_argument(
             "--historyout", required=False,
             help="Create a history of this run in CSV format as well.")
+        argParser.add_argument(
+            "--verify1stauthors", required=False,
+            action="store_true", 
+            help="When we have a paper from more than one source, check that" +
+                 " the two sources have the same first author.  This is noisy.")
         self.args = argParser.parse_args()
         
         # split comma separated list of sources
@@ -149,7 +154,10 @@ for source in sources:
         
 # All papers from all emails read; do some verification
 papers.verifyConsistentDois()      # all papers with same title have the same (or no) DOI
-papers.verifyConsistent1stAuthor() # all papers with same title have same 1st author
+
+# next report is mostly noise.  Only generate it if requested.
+if args.args.verify1stauthors:
+    papers.verifyConsistent1stAuthor() # all papers with same title have same 1st author
 
 # Now compare new pubs with existing CUL lib.
 # Using title, because everything has a title
