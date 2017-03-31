@@ -121,6 +121,12 @@ def createReport(matchupsByLowTitle, sectionTitle):
                         
                 with tag("li"):
                     with tag("a",
+                             href="https://scholar.google.com/scholar?q=" + matchup.title,
+                             target="googlescholarsearch"):
+                        text("Search Google Scholar")
+                        
+                with tag("li"):
+                    with tag("a",
                              href="http://www.ncbi.nlm.nih.gov/pubmed/?term=" + matchup.title,
                              target="pubmedtitlesearch"):
                         text("Search Pubmed")
@@ -235,6 +241,12 @@ def reportPaper(matchup, history):
                              target="googletitlesearch"):
                         text("Search Google")
                         
+                with tag("li"):
+                    with tag("a",
+                             href="https://scholar.google.com/scholar?q=" + matchup.title,
+                             target="googlescholarsearch"):
+                        text("Search Google Scholar")
+
                 with tag("li"):
                     with tag("a",
                              href="http://www.ncbi.nlm.nih.gov/pubmed/?term=" + matchup.title,
