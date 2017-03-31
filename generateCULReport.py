@@ -14,8 +14,13 @@ import CiteULike                          # CiteULike Handling
 
 CUL_GROUP_ID = "16008"
 CUL_GROUP_SEARCH = "http://www.citeulike.org/search/group?search=Search+library&group_id=" + CUL_GROUP_ID + "&q="
+CUL_SEARCH_LOGICAL_AND = "+%26%26+"              # " && "
+CUL_SEARCH_YEAR        = "year%3A"               # "year:"
+CUL_SEARCH_TAG         = "tag%3A"                # "tag:"
 
 CUL_GROUP_TAG_BASE_URL = "http://www.citeulike.org/group/" + CUL_GROUP_ID + "/tag/"
+
+
 
 
 class FastCulLib(object):
@@ -177,7 +182,7 @@ class FastCulLib(object):
 
 
 
-def genMarkdownCountStyle(numPapers):
+def genMarkdownCountStyleBlue(numPapers):
     """
     Bigger counts get more emphasis.
     """
@@ -216,6 +221,44 @@ def genMarkdownCountStyle(numPapers):
     return style
 
 
+def genMarkdownCountStyle(numPapers):
+    """
+    Bigger counts get more emphasis.
+    """
+    style = ' style="text-align: right; '
+
+    if numPapers == 0:
+        style += 'color: #ffffff;'
+    elif numPapers == 1:
+        style += 'background-color: #f8fff8;'
+    elif numPapers == 2:
+        style += 'background-color: #f0fff0;'
+    elif numPapers <= 5:
+        style += 'background-color: #e8ffe8;'
+    elif numPapers <= 10:
+        style += 'background-color: #e0ffe0;'
+    elif numPapers <= 20:
+        style += 'background-color: #d8ffd8;'
+    elif numPapers <= 50:
+        style += 'background-color: #c8ffc8;'
+    elif numPapers <= 100:
+        style += 'background-color: #b8f0b8;'
+    elif numPapers <= 200:
+        style += 'background-color: #a8e8a8;'
+    elif numPapers <= 500:
+        style += 'background-color: #98e098;'
+    elif numPapers <= 1000:
+        style += 'background-color: #88d888;'
+    elif numPapers <= 2000:
+        style += 'background-color: #78d078;'
+    elif numPapers <= 5000:
+        style += 'background-color: #68c868;'
+    elif numPapers <= 10000:
+        style += 'background-color: #58c058;'
+    style += '" '
+
+    return style
+
 
 def genMarkdownTagYearReport(fastCulLib):
     """
@@ -246,7 +289,8 @@ def genMarkdownTagYearReport(fastCulLib):
     
     report.append('  <tr>\n')
     for tag in tagsInCountOrder:
-        report.append('    <th> ' + tag + ' </th>\n')
+        report.append(
+            '    <th> <a href="' + CUL_GROUP_TAG_BASE_URL + tag + '">' + tag + '</a> </th>\n')
     report.append('  </tr>\n')
 
     # generate numbers per year
@@ -258,13 +302,21 @@ def genMarkdownTagYearReport(fastCulLib):
             papersForTagYear = fastCulLib.getPapers(tag=tag, year=year)
             if papersForTagYear:
                 style = genMarkdownCountStyle(len(papersForTagYear))
-                count = str(len(papersForTagYear))
+                count = (
+                    '<a href="' + CUL_GROUP_SEARCH +
+                    CUL_SEARCH_YEAR + year +
+                    CUL_SEARCH_LOGICAL_AND +
+                    CUL_SEARCH_TAG + tag +
+                    '">' + str(len(papersForTagYear)) + '</a>')
             else:
                 style = ""
                 count = ""
-            report.append('    <td ' + style + '> ' +  count + ' </td>\n')
+            report.append('    <td ' + style + '> ' + count + ' </td>\n')
         yearCountStyle = genMarkdownCountStyle(nPapersThisYear)
-        report.append('    <td ' + yearCountStyle + '> ' + str(nPapersThisYear) + ' </td>\n')
+        report.append(
+            '    <td ' + yearCountStyle + '> ' +
+            '<a href="' + CUL_GROUP_SEARCH + CUL_SEARCH_YEAR + year + '">' + 
+            str(nPapersThisYear) + '</a> </td>\n')
         report.append('  </tr>\n')
 
     # generate total line at bottom
@@ -272,7 +324,10 @@ def genMarkdownTagYearReport(fastCulLib):
     report.append('    <th> Total </th>\n')
     for tag in tagsInCountOrder:
         tagCountStyle =  genMarkdownCountStyle(nPapersWTag[tag])
-        report.append('    <th ' + tagCountStyle + '> ' + str(nPapersWTag[tag]) + ' </th>\n')
+        report.append(
+            '    <th ' + tagCountStyle + '> ' +
+            '<a href="' + CUL_GROUP_TAG_BASE_URL + tag + '">' +
+            str(nPapersWTag[tag]) + '</a> </th>\n')
 
     allPapersCount = len(fastCulLib.getPapers())
     allPapersStyle = genMarkdownCountStyle(allPapersCount)
