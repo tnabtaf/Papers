@@ -221,7 +221,7 @@ def genMarkdownCountStyleBlue(numPapers):
     return style
 
 
-def genMarkdownCountStyle(numPapers):
+def genHtmlCountStyle(numPapers):
     """
     Bigger counts get more emphasis.
     """
@@ -260,9 +260,9 @@ def genMarkdownCountStyle(numPapers):
     return style
 
 
-def genMarkdownTagYearReport(fastCulLib):
+def genHtmlTagYearReport(fastCulLib):
     """
-    Generate a papers by tag and year report in Markdown markup.
+    Generate a papers by tag and year report in HTML markup.
     Report is returned as a multi-line string.
     """
     # Preprocess. Need to know order of tags and years.
@@ -280,7 +280,7 @@ def genMarkdownTagYearReport(fastCulLib):
     report = []                # now have everything we need; generate report
     
     # generate header
-    report.append('<table>\n')
+    report.append('<table class="table">\n')
     report.append('  <tr>\n')
     report.append('    <th rowspan="2"> Year </th>\n')
     report.append('    <th colspan="' + str(len(tags)) + '"> Tags </th>\n')
@@ -301,7 +301,7 @@ def genMarkdownTagYearReport(fastCulLib):
         for tag in tagsInCountOrder:
             papersForTagYear = fastCulLib.getPapers(tag=tag, year=year)
             if papersForTagYear:
-                style = genMarkdownCountStyle(len(papersForTagYear))
+                style = genHtmlCountStyle(len(papersForTagYear))
                 count = (
                     '<a href="' + CUL_GROUP_SEARCH +
                     CUL_SEARCH_YEAR + year +
@@ -312,7 +312,7 @@ def genMarkdownTagYearReport(fastCulLib):
                 style = ""
                 count = ""
             report.append('    <td ' + style + '> ' + count + ' </td>\n')
-        yearCountStyle = genMarkdownCountStyle(nPapersThisYear)
+        yearCountStyle = genHtmlCountStyle(nPapersThisYear)
         report.append(
             '    <td ' + yearCountStyle + '> ' +
             '<a href="' + CUL_GROUP_SEARCH + CUL_SEARCH_YEAR + year + '">' + 
@@ -323,14 +323,14 @@ def genMarkdownTagYearReport(fastCulLib):
     report.append('  <tr>\n')
     report.append('    <th> Total </th>\n')
     for tag in tagsInCountOrder:
-        tagCountStyle =  genMarkdownCountStyle(nPapersWTag[tag])
+        tagCountStyle =  genHtmlCountStyle(nPapersWTag[tag])
         report.append(
             '    <th ' + tagCountStyle + '> ' +
             '<a href="' + CUL_GROUP_TAG_BASE_URL + tag + '">' +
             str(nPapersWTag[tag]) + '</a> </th>\n')
 
     allPapersCount = len(fastCulLib.getPapers())
-    allPapersStyle = genMarkdownCountStyle(allPapersCount)
+    allPapersStyle = genHtmlCountStyle(allPapersCount)
     report.append('    <th ' + allPapersStyle + '> ' + str(allPapersCount) + ' </th>\n')
     report.append('  </tr>\n')
     report.append('</table>\n')
@@ -338,9 +338,9 @@ def genMarkdownTagYearReport(fastCulLib):
     return(u"".join(report))
 
 
-def genMarkdownYearTagReport(fastCulLib):
+def genHtmlYearTagReport(fastCulLib):
     """
-    Generate a papers by year and tag report in Markdown markup.
+    Generate a papers by year and tag report in HTML markup.
     Report is returned as a multi-line string.
     """
     # Preprocess. Need to know order of tags and years.
@@ -358,7 +358,7 @@ def genMarkdownYearTagReport(fastCulLib):
     report = []                # now have everything we need; generate report
     
     # generate header
-    report.append('<table>\n')
+    report.append('<table class="table">\n')
     report.append('  <tr>\n')
     report.append('    <th> Tag </th>\n')
 
@@ -375,14 +375,14 @@ def genMarkdownYearTagReport(fastCulLib):
         for year in fastCulLib.getYears():
             papersForTagYear = fastCulLib.getPapers(tag=tag, year=year)
             if papersForTagYear:
-                style = genMarkdownCountStyle(len(papersForTagYear))
+                style = genHtmlCountStyle(len(papersForTagYear))
                 count = str(len(papersForTagYear))
             else:
                 style = ""
                 count = ""
             report.append('    <td ' + style + '> ' + count + ' </td>\n')
 
-        tagCountStyle = genMarkdownCountStyle(nPapersWTag[tag])
+        tagCountStyle = genHtmlCountStyle(nPapersWTag[tag])
         report.append('    <th ' + tagCountStyle + '> ' + str(nPapersWTag[tag]) + " </th>\n")
         report.append('  </tr>\n')
  
@@ -391,11 +391,11 @@ def genMarkdownYearTagReport(fastCulLib):
     report.append('    <th> Total </th>\n')
     for year in fastCulLib.getYears():
         nPapersThisYear = len(fastCulLib.getPapers(year=year))
-        papersThisYearStyle = genMarkdownCountStyle(nPapersThisYear)
+        papersThisYearStyle = genHtmlCountStyle(nPapersThisYear)
         report.append('    <th ' + papersThisYearStyle + '>' + str(nPapersThisYear) + ' </th>\n')
 
     totalPapers = len(fastCulLib.getPapers())
-    totalPapersStyle = genMarkdownCountStyle(totalPapers)
+    totalPapersStyle = genHtmlCountStyle(totalPapers)
     report.append('    <th ' + totalPapersStyle + '> ' +
                   str(totalPapers) + ' </th>\n')
     report.append('  </tr>\n')
@@ -439,10 +439,10 @@ def genTsvJournalReport(fastCulLib):
 
     return(u"".join(report).encode('utf-8'))
 
-        
-def genMarkdownJournalReport(fastCulLib):
+
+def genHtmlJournalReport(fastCulLib):
     """
-    Generate a papers by by Journal and Year report in Markdown markup.
+    Generate a papers by by Journal and Year report in HTML Bootstrap markup.
     Report is returned as a multi-line string.
     """
 
@@ -450,7 +450,7 @@ def genMarkdownJournalReport(fastCulLib):
     years = fastCulLib.getYears()
     
     # generate header
-    report.append('<table>\n')
+    report.append('<table class="table">\n')
     report.append('  <tr>\n')
     report.append('    <th> </th>\n')
     report.append('    <th> Journal </th>\n')
@@ -475,12 +475,12 @@ def genMarkdownJournalReport(fastCulLib):
             
         for year in years:
             numPapers = len(fastCulLib.getPapers(journal=journalName, year=year))
-            style = genMarkdownCountStyle(numPapers)
+            style = genHtmlCountStyle(numPapers)
             report.append('    <td ' + style + "> " + str(numPapers) + ' </td>\n')
 
         # Add total for journal across all years.
         journalTotalPapers = fastCulLib.getJournalTotalCount(journalName)
-        journalTotalStyle = genMarkdownCountStyle(journalTotalPapers)
+        journalTotalStyle = genHtmlCountStyle(journalTotalPapers)
         report.append("    <th " + journalTotalStyle + "> " +
                       str(journalTotalPapers) + " </th>\n")
 
@@ -498,11 +498,11 @@ def genMarkdownJournalReport(fastCulLib):
     report.append('    <th> TOTALS </th>\n')
     for year in years:  # years are listed chronologically
         yearTotal = len(fastCulLib.getPapers(year=year))
-        yearStyle = genMarkdownCountStyle(yearTotal)
+        yearStyle = genHtmlCountStyle(yearTotal)
         report.append('    <th ' + yearStyle + "> " + str(yearTotal) + ' </th>\n')
 
     totalPapers = fastCulLib.getPaperCount()
-    totalStyle = genMarkdownCountStyle(totalPapers)
+    totalStyle = genHtmlCountStyle(totalPapers)
     report.append("    <th " + totalStyle + "> " + str(totalPapers) + "</th>\n")
     report.append('    <th> </th>\n')
     report.append("  </tr>\n")
@@ -511,7 +511,7 @@ def genMarkdownJournalReport(fastCulLib):
     return(u"".join(report))
 
 
-def genMarkdownTagsDateRangeReport(fastCulLib, startDate, endDate):
+def genHtmlTagsDateRangeReport(fastCulLib, startDate, endDate):
     """
     report how many papers have each tag that were enterred into CUL during
     a given date range.
@@ -564,7 +564,7 @@ def genMarkdownTagsDateRangeReport(fastCulLib, startDate, endDate):
     report.append('\n' + str(nTotalPapers) + ' papers added between ' +
                   startDate + ' and ' + endDate +'.\n\n') # markdown! 
     report.append(
-        '<table>\n' +
+        '<table class="table">\n' +
         '  <tr>\n')
     for colGroup in range(N_TAG_COLUMN_GROUPS):
         report.append(
@@ -589,6 +589,82 @@ def genMarkdownTagsDateRangeReport(fastCulLib, startDate, endDate):
  
     report.append('</table>\n')
 
+    return(u"".join(report))
+
+
+def genMarkdownTagsDateRangeReport(fastCulLib, startDate, endDate):
+    """
+    report how many papers have each tag that were enterred into CUL during
+    a given date range.
+
+    Report is returned as a multi-line string.
+
+    Can see a couple of ways to do this:
+    1. Only report tags that have papers
+    2. Report all tags, even the ones with no papers.
+    3. Order tags from most to least papers
+    4. Order tags alphabetically
+    5. Present tags in a multi-column table
+    6. Present tabs in 2 column table: count, and tag.
+
+    Went with #1, #3, and #5.  An earlier version went with #1, #3, and #6.
+    """
+
+    N_TAG_COLUMN_GROUPS = 4         # create report with n tags and n counts across
+
+    # get total # of papers during time range
+    nTotalPapers = len(fastCulLib.getPapers(startDate=startDate, endDate=endDate))
+    
+    # Preprocess. Need to know order of tags and years.
+    tags = fastCulLib.getTags()
+    # Count number of papers with each tag
+    nPapersWTag = {}
+    for tag in tags:
+        nPapersWTag[tag] = len(fastCulLib.getPapers(tag=tag, startDate=startDate, endDate=endDate))
+
+    # sort tags by paper count, max first
+    tagsInCountOrder = [tag for tag in
+                        sorted(nPapersWTag.keys(),
+                               key=lambda keyValue: - nPapersWTag[keyValue])]
+
+    # generate numbers per tag
+    tagMarkup = []
+    for tag in tagsInCountOrder:
+        if nPapersWTag[tag] > 0:
+            tagMarkup.append(
+                '| ' + str(nPapersWTag[tag]) +
+                ' | [' + tag + '](' + CUL_GROUP_TAG_BASE_URL + tag + ') | ')
+
+    # Have markup for individual tags; now decide how many go in each column
+    nTagsToReport = len(tagMarkup)
+    nTagsPerCol = int(math.ceil(nTagsToReport / N_TAG_COLUMN_GROUPS))
+
+    report = []              # now have everything we need; generate report
+
+    # generate header
+    report.append('\n' + str(nTotalPapers) + ' papers added between ' +
+                  startDate + ' and ' + endDate +'.\n\n') # markdown! 
+
+    headerLine = []              
+    for colGroup in range(N_TAG_COLUMN_GROUPS):
+        report.append(
+            '| # | Tag | ')
+        headerLine.append('| ---: | --- |')
+        if colGroup < N_TAG_COLUMN_GROUPS - 1:
+            headerLine.append(' --- ')
+    report.append("\n")
+    report.append("".join(headerLine) + "\n")
+
+    # add tags & counts
+    for rowIdx in range(nTagsPerCol):
+        for colGroup in range(N_TAG_COLUMN_GROUPS):
+            tagIdx = (rowIdx * N_TAG_COLUMN_GROUPS) + colGroup
+            if tagIdx < nTagsToReport:
+                report.append(tagMarkup[tagIdx])
+            else:
+                report.append('| | | ')
+        report.append('\n')
+ 
     return(u"".join(report))
 
 
@@ -628,6 +704,9 @@ def argghhs():
         "--markdown", required=False, action="store_true",
         help="Produce report(s) using Markdown")
     argParser.add_argument(
+        "--html", required=False, action="store_true",
+        help="Produce report(s) using HTML")
+    argParser.add_argument(
         "--tsv", required=False, action="store_true", 
         help=("Produce report(s) in TSV format"))
 
@@ -655,10 +734,10 @@ if args.tagyear:
     # work. Try that.
 
     # report showing papers by tag by year requested.
-    if args.markdown:
+    if args.html:
         # generate a tag year report in Markdown format.
-        markdownReport = genMarkdownTagYearReport(fastCulLib)
-        print(markdownReport)
+        htmlReport = genHtmlTagYearReport(fastCulLib)
+        print(htmlReport)
     if args.tsv:
         # generate tag year data in a tab delimited file
         tsvReport = genTsvTagYearReport(fastCulLib)
@@ -673,10 +752,10 @@ if args.yeartag:
     # work. Try that.
 
     # report showing papers by tag by year requested.
-    if args.markdown:
+    if args.html:
         # generate a tag year report in Markdown format.
-        markdownReport = genMarkdownYearTagReport(fastCulLib)
-        print(markdownReport)
+        htmlReport = genHtmlYearTagReport(fastCulLib)
+        print(htmlReport)
 
 
 if args.journalyear:
@@ -689,8 +768,8 @@ if args.journalyear:
         journalReport = genTsvJournalReport(fastCulLib)
         print(journalReport)
     
-    if args.markdown:
-        journalReport = genMarkdownJournalReport(fastCulLib)
+    if args.html:
+        journalReport = genHtmlJournalReport(fastCulLib)
         print(journalReport)
     
 if args.tagcountdaterange:
@@ -703,4 +782,8 @@ if args.tagcountdaterange:
         tagsDateRangeReport = genMarkdownTagsDateRangeReport(fastCulLib, args.startdate, args.enddate)
         print(tagsDateRangeReport)
     
+    if args.html:
+        tagsDateRangeReport = genHtmlTagsDateRangeReport(fastCulLib, args.startdate, args.enddate)
+        print(tagsDateRangeReport)
+
         

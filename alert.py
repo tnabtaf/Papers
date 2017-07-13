@@ -16,7 +16,7 @@ class PaperAlert(object):
 
     def __init__(self):
         """
-        
+        Initialize with default values for all subclasses.
         """
         self.title = None
         self.authors = None
@@ -41,7 +41,6 @@ class PaperAlert(object):
         Don't assume any consistent way to get this.  This had better be overriden.
         """
         return 1/0
-
     def getFirstAuthorLastNameLower(self):
         firstAuthor = self.getFirstAuthorLastName()
         if firstAuthor:

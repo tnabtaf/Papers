@@ -47,8 +47,23 @@ class Matchup(object):
                 return(paper.doi)
         return(None)
 
-        
+    def getPapersSortedBySearch(self):
+        """
+        Return list of matchup's papers, sorted by search string.
+        Used to produce output in the same order every time.
+        """
+        return(sorted(self.papers, key=lambda paper: paper.search))
 
+    def getPapersLongestTitel(self):
+        """
+        Get the longest title of any matching search for this paper.
+        Shy the longest?  Google sometime's truncates title.
+        """
+        longest = ""
+        for paper in self.papers:
+            if len(paper.title) > len(longest):
+                longest = paper.title
+        return(longest)
 
 def createReport(matchupsByLowTitle, sectionTitle):
     """
@@ -188,7 +203,7 @@ def reportPaper(matchup, history):
             text(matchup.papers[0].title)
     
         with tag("ol"):
-            for paper in matchup.papers:
+            for paper in matchup.getPapersSortedBySearch():
                 with tag("li"):
                     text(paper.search)
                     with tag("ul"):

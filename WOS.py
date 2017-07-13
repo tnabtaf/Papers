@@ -8,8 +8,8 @@ import re
 import alert
 import html.parser
 
-SENDER = "noreply@isiknowledge.com"
-
+#SENDER = "noreply@isiknowledge.com"
+SENDER = "noreply@webofscience.com"
 
 class WOSPaper(alert.PaperAlert):
     """
